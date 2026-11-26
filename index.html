@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>ParejaFinance | Control Ejecutivo & Proyectos</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: { 850: '#162033', 950: '#090e1a' }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body { -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-24 selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- HEADER SUPERIOR -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-lg">
+          $
+        </div>
+        <div>
+          <h1 class="font-bold text-base leading-tight tracking-tight">ParejaFinance</h1>
+          <button id="btnOpenFirebaseModal" class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition">
+            <span id="connDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="connText">Conectando a Firebase...</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="month" id="periodSelector" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
+        <button id="btnHeaderConfig" title="Configurar Firebase" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white active:scale-95 transition">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-4xl mx-auto px-4 pt-4 space-y-6">
+
+    <!-- VISTA 1: DASHBOARD EJECUTIVO -->
+    <section id="view-dashboard" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ejecución Presupuestaria</span>
+          <button type="button" onclick="openIngresosModal()" title="Ver, editar o eliminar ingresos del período" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-800 text-emerald-400 hover:bg-slate-700 transition cursor-pointer">
+            <span id="badgeBalanceNeto">Balance Neto: $0.00</span> • Ingresos
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left">
+          <div class="bg-slate-850 p-3 rounded-xl border border-slate-800/80">
+            <p class="text-[11px] text-slate-400 uppercase">Presupuestado</p>
+            <p id="kpiPresupuestado" class="text-base sm:text-xl font-bold text-slate-100 mt-0.5">$0.00</p>
+          </div>
+          <div class="bg-slate-850 p-3 rounded-xl border border-slate-800/80">
+            <p class="text-[11px] text-slate-400 uppercase">Ejecutado</p>
+            <p id="kpiEjecutado" class="text-base sm:text-xl font-bold text-amber-400 mt-0.5">$0.00</p>
+          </div>
+          <div class="bg-slate-850 p-3 rounded-xl border border-slate-800/80">
+            <p class="text-[11px] text-slate-400 uppercase">Disponible</p>
+            <p id="kpiDisponible" class="text-base sm:text-xl font-bold text-emerald-400 mt-0.5">$0.00</p>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-300 font-medium">Ejecución Real: <strong id="pctRealLabel" class="text-emerald-400">0%</strong></span>
+            <span class="text-slate-400">Ritmo Esperado (Día <span id="diaMesLabel">1</span>): <strong id="pctEsperadoLabel" class="text-sky-400">0%</strong></span>
+          </div>
+          <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+            <div id="barReal" class="h-full bg-emerald-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
+            <div id="barEsperado" class="h-full bg-sky-400/80 transition-all duration-500 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="ritmoStatusText" class="text-xs text-slate-400 italic">Calculando ritmo de gasto...</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300">Reservas por Categoría</h2>
+            <p class="text-[11px] text-slate-500">Toca una categoría para ver, editar o eliminar sus gastos</p>
+          </div>
+          <button onclick="switchTab('presupuesto')" class="text-xs text-emerald-400 font-medium hover:underline">+ Gestionar Topes</button>
+        </div>
+        <div id="categoryCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Reservas Disponibles por Categoría</h3>
+          <div class="relative h-56">
+            <canvas id="chartReservas"></canvas>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Ejecución de Gasto por Usuario</h3>
+          <div class="relative h-56">
+            <canvas id="chartUsuarios"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">Movimientos del Período</h3>
+          <div class="grid grid-cols-3 gap-2">
+            <input type="date" id="filterFecha" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200" />
+            <select id="filterCategoria" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+              <option value="">Categoría: Todas</option>
+            </select>
+            <select id="filterUsuario" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+              <option value="">Usuario: Todos</option>
+              <option value="Charles">Charles</option>
+              <option value="Mariana">Mariana</option>
+              <option value="Compartido">Compartido</option>
+            </select>
+          </div>
+        </div>
+        <div id="historialList" class="divide-y divide-slate-800 max-h-96 overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- VISTA 2: REGISTRAR GASTO / INGRESO -->
+    <section id="view-movimientos" class="hidden space-y-6">
+      <div class="grid grid-cols-2 bg-slate-900 p-1 rounded-2xl border border-slate-800">
+        <button id="subTabGasto" onclick="toggleMoveForm('gasto')" class="py-3 rounded-xl font-semibold text-sm bg-rose-500/20 text-rose-400 border border-rose-500/40 transition">
+          - Registrar Gasto
+        </button>
+        <button id="subTabIngreso" onclick="toggleMoveForm('ingreso')" class="py-3 rounded-xl font-semibold text-sm text-slate-400 hover:text-slate-200 transition">
+          + Registrar Ingreso
+        </button>
+      </div>
+
+      <form id="formGasto" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 class="text-base font-bold text-rose-400 flex items-center gap-2">
+          <i data-lucide="arrow-down-circle" class="w-5 h-5"></i> Nuevo Gasto (Descuenta de Reserva)
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+            <input type="date" id="gastoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Categoría de Presupuesto</label>
+            <select id="gastoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none">
+              <option value="">Selecciona categoría...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Monto (USD Base)</label>
+            <input type="number" step="0.01" min="0.01" id="gastoMonto" placeholder="0.00" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-lg font-bold text-white focus:border-rose-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">¿Quién ejecutó el gasto? *</label>
+            <select id="gastoUsuario" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none">
+              <option value="Charles">Charles</option>
+              <option value="Mariana">Mariana</option>
+              <option value="Compartido">Compartido</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Descripción / Detalle</label>
+          <input type="text" id="gastoDesc" placeholder="Ej. Compra semanal supermercado, pañales Roma..." required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none" />
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-bold text-sm shadow-lg shadow-rose-950/50 transition">
+          Guardar Gasto y Actualizar Reserva
+        </button>
+      </form>
+
+      <!-- GASTOS REGISTRADOS DEL MES EN PESTAÑA DE REGISTRO -->
+      <div id="gastosRegistradosBox" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Gastos Registrados del Mes</h3>
+          <span id="totalGastosRegistroLabel" class="text-sm font-bold text-rose-400">$0.00</span>
+        </div>
+        <div id="gastosRegistroList" class="divide-y divide-slate-800 text-sm"></div>
+      </div>
+
+      <form id="formIngreso" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+          <i data-lucide="arrow-up-circle" class="w-5 h-5"></i> Nuevo Ingreso al Período
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+            <input type="date" id="ingresoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Categoría de Ingreso</label>
+            <select id="ingresoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="Honorarios Legales">Honorarios Legales</option>
+              <option value="Alquiler Lavadoras">Alquiler Lavadoras</option>
+              <option value="Trading">Trading</option>
+              <option value="Salario / Otros">Salario / Otros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Monto (USD Base)</label>
+            <input type="number" step="0.01" min="0.01" id="ingresoMonto" placeholder="0.00" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-lg font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">¿Quién lo recibió?</label>
+            <select id="ingresoUsuario" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="Charles">Charles</option>
+              <option value="Mariana">Mariana</option>
+              <option value="Compartido">Fondo Común</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Concepto</label>
+          <input type="text" id="ingresoDesc" placeholder="Ej. Honorarios caso penal, alquiler lavadoras..." required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none" />
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-slate-950 font-bold text-sm shadow-lg shadow-emerald-950/50 transition">
+          Registrar Ingreso
+        </button>
+      </form>
+
+      <div id="ingresosRegistradosBox" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Ingresos Registrados del Mes</h3>
+          <span id="totalIngresosLabel" class="text-sm font-bold text-emerald-400">$0.00</span>
+        </div>
+        <div id="ingresosList" class="divide-y divide-slate-800 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- VISTA 3: PRESUPUESTO Y TOPES -->
+    <section id="view-presupuesto" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div>
+          <h2 class="text-base font-bold">Estructura de Presupuesto</h2>
+          <p class="text-xs text-slate-400">Define los topes mensuales por categoría</p>
+        </div>
+        <button id="btnCloneMonth" class="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-500/15 border border-sky-500/40 text-sky-400 text-xs font-semibold hover:bg-sky-500/25 active:scale-95 transition">
+          <i data-lucide="copy" class="w-4 h-4"></i> Clonar Mes Anterior
+        </button>
+      </div>
+
+      <form id="formCategoria" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <input type="hidden" id="catEditId" />
+        <h3 id="catFormTitle" class="text-sm font-bold text-emerald-400">Nueva Categoría / Tope</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nombre de Categoría</label>
+            <input type="text" id="catNombre" placeholder="Ej. Mercado, Roma, Vehículo, Gastos Fijos" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tipo de Gasto</label>
+            <select id="catTipo" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white">
+              <option value="Tope Variable">Gasto con Tope Variable</option>
+              <option value="Gasto Fijo">Gasto Fijo Comprometido</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="catFechaFijoContainer" class="hidden">
+          <label class="block text-xs text-sky-400 mb-1">Fecha Programada de Ejecución (Gasto Fijo) *</label>
+          <input type="date" id="catFechaFijo" class="w-full bg-slate-800 border border-sky-500/40 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-sky-400 focus:outline-none" />
+          <p class="text-[11px] text-slate-400 mt-1">El ritmo esperado de este gasto fijo se activará al 100% a partir de esta fecha.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tope Asignado (USD Base)</label>
+            <input type="number" step="0.01" min="1" id="catLimite" placeholder="300.00" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Moneda Ref. (Opcional)</label>
+            <select id="catMonedaRef" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white">
+              <option value="USD">USD ($)</option>
+              <option value="COP">COP (Pesos)</option>
+              <option value="VES">VES (Bolívares)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tasa Ref. (Opcional)</label>
+            <input type="number" step="0.01" id="catTasaRef" placeholder="Ej. 4300 o 46.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white" />
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-sm transition">
+            Guardar Categoría
+          </button>
+          <button type="button" id="btnCancelCatEdit" class="hidden px-4 py-3 rounded-xl bg-slate-800 text-slate-300 text-sm">
+            Cancelar
+          </button>
+        </div>
+      </form>
+
+      <div id="categoriasConfigList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- VISTA 4: PROYECTOS Y MOTOR DE SOBRANTES -->
+    <section id="view-proyectos" class="hidden space-y-6">
+      <div class="bg-gradient-to-br from-slate-900 to-slate-850 border border-emerald-500/30 rounded-2xl p-5 space-y-4 shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Motor de Capitalización</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Sobrante Disponible del Período</h2>
+            <p class="text-xs text-slate-400 mt-1">Calculado por reservas no consumidas e ingresos excedentes del mes.</p>
+          </div>
+          <div class="text-right">
+            <p id="sobranteTotalDisplay" class="text-2xl font-extrabold text-emerald-400">$0.00</p>
+            <span class="text-[11px] text-slate-400">Listo para asignar</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+          <select id="selectProyectoDestino" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+            <option value="">Selecciona Proyecto Destino...</option>
+          </select>
+          <input type="number" step="0.01" min="0.01" id="montoTransferirProyecto" placeholder="Monto a transferir ($)" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-white" />
+          <button id="btnAsignarSobrante" class="py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm active:scale-95 transition">
+            Transferir a Proyecto
+          </button>
+        </div>
+      </div>
+
+      <!-- TRANSFERENCIA ENTRE PROYECTOS -->
+      <div class="bg-slate-900 border border-sky-500/30 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400">Reasignación Interna</span>
+            <h3 class="text-sm font-bold text-white mt-0.5">Transferir Fondos Entre Proyectos</h3>
+          </div>
+          <i data-lucide="arrow-left-right" class="w-5 h-5 text-sky-400"></i>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <select id="selectProyectoOrigen" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+            <option value="">Proyecto Origen...</option>
+          </select>
+          <select id="selectProyectoDestinoTransfer" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+            <option value="">Proyecto Destino...</option>
+          </select>
+          <input type="number" step="0.01" min="0.01" id="montoTransferEntreProyectos" placeholder="Monto ($)" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-white" />
+          <button type="button" id="btnTransferirEntreProyectos" class="py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm active:scale-95 transition">
+            Mover Fondos
+          </button>
+        </div>
+      </div>
+
+      <form id="formProyecto" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h3 class="text-sm font-bold text-slate-200">Nuevo Proyecto o Fondo Meta</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input type="text" id="proyNombre" placeholder="Ej. Mobiliario, Vehículo, Emergencia" required class="bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white" />
+          <input type="number" step="0.01" min="1" id="proyObjetivo" placeholder="Costo Objetivo ($)" required class="bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white" />
+          <button type="submit" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-bold text-sm transition">
+            + Crear Proyecto
+          </button>
+        </div>
+      </form>
+
+      <div id="proyectosGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- NAVEGACIÓN INFERIOR -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-slate-900/95 backdrop-blur border-t border-slate-800">
+    <div class="max-w-4xl mx-auto grid grid-cols-4 h-16">
+      <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn flex flex-col items-center justify-center gap-1 text-emerald-400">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[11px] font-medium">Resumen</span>
+      </button>
+      <button onclick="switchTab('movimientos')" data-tab="movimientos" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400">
+        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+        <span class="text-[11px] font-medium">Registrar</span>
+      </button>
+      <button onclick="switchTab('presupuesto')" data-tab="presupuesto" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400">
+        <i data-lucide="sliders" class="w-5 h-5"></i>
+        <span class="text-[11px] font-medium">Topes</span>
+      </button>
+      <button onclick="switchTab('proyectos')" data-tab="proyectos" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400">
+        <i data-lucide="target" class="w-5 h-5"></i>
+        <span class="text-[11px] font-medium">Proyectos</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL GASTOS POR CATEGORÍA -->
+  <div id="categoryExpensesModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Detalle de Reserva</span>
+          <h3 id="catModalTitle" class="text-base font-bold text-white">Gastos de Categoría</h3>
+          <p id="catModalSummary" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button type="button" id="btnCloseCatModal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="catModalList" class="divide-y divide-slate-800 overflow-y-auto flex-1 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR GASTO -->
+  <div id="editGastoModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <form id="formEditGasto" class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <input type="hidden" id="editGastoId" />
+      <input type="hidden" id="editGastoOldCatId" />
+      <input type="hidden" id="editGastoOldMonto" />
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-rose-400 flex items-center gap-2">
+          <i data-lucide="pencil" class="w-4 h-4"></i> Editar Gasto
+        </h3>
+        <button type="button" id="btnCloseEditGastoModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+          <input type="date" id="editGastoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Categoría</label>
+          <select id="editGastoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Monto (USD)</label>
+          <input type="number" step="0.01" min="0.01" id="editGastoMonto" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Usuario</label>
+          <select id="editGastoUsuario" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <option value="Charles">Charles</option>
+            <option value="Mariana">Mariana</option>
+            <option value="Compartido">Compartido</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Descripción</label>
+        <input type="text" id="editGastoDesc" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs">
+          Guardar Cambios
+        </button>
+        <button type="button" id="btnCancelEditGasto" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL INGRESOS DEL PERÍODO -->
+  <div id="ingresosModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Entradas del Período</span>
+          <h3 class="text-base font-bold text-white">Ingresos Registrados</h3>
+          <p id="ingresosModalSummary" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button type="button" id="btnCloseIngresosModal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="ingresosModalList" class="divide-y divide-slate-800 overflow-y-auto flex-1 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR INGRESO -->
+  <div id="editIngresoModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <form id="formEditIngreso" class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <input type="hidden" id="editIngresoId" />
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+          <i data-lucide="pencil" class="w-4 h-4"></i> Editar Ingreso
+        </h3>
+        <button type="button" id="btnCloseEditIngresoModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+          <input type="date" id="editIngresoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Categoría</label>
+          <select id="editIngresoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <option value="Honorarios Legales">Honorarios Legales</option>
+            <option value="Alquiler Lavadoras">Alquiler Lavadoras</option>
+            <option value="Trading">Trading</option>
+            <option value="Salario / Otros">Salario / Otros</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Monto (USD)</label>
+          <input type="number" step="0.01" min="0.01" id="editIngresoMonto" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">¿Quién lo recibió?</label>
+          <select id="editIngresoUsuario" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <option value="Charles">Charles</option>
+            <option value="Mariana">Mariana</option>
+            <option value="Compartido">Fondo Común</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Concepto</label>
+        <input type="text" id="editIngresoDesc" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs">
+          Guardar Cambios
+        </button>
+        <button type="button" id="btnCancelEditIngreso" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL EDITAR PROYECTO -->
+  <div id="editProyectoModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <form id="formEditProyecto" class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <input type="hidden" id="editProyId" />
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+          <i data-lucide="pencil" class="w-4 h-4"></i> Editar Proyecto
+        </h3>
+        <button type="button" id="btnCloseEditProyectoModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Nombre del Proyecto</label>
+        <input type="text" id="editProyNombre" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Costo Objetivo (USD)</label>
+          <input type="number" step="0.01" min="0.01" id="editProyObjetivo" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Saldo Acumulado (USD)</label>
+          <input type="number" step="0.01" min="0" id="editProyAcumulado" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs">
+          Guardar Cambios
+        </button>
+        <button type="button" id="btnCancelEditProyecto" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL CONFIGURACIÓN FIREBASE -->
+  <div id="firebaseModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Conexión Firebase Realtime
+        </h3>
+        <button id="btnCloseFirebaseModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400">
+        Proyecto vinculado: <strong class="text-emerald-400">finanzas-ae007</strong>. Puedes sobrescribir los valores aquí si deseas usar otra base.
+      </p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Database URL *</label>
+          <input type="url" id="inputFbDbUrl" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">API Key *</label>
+          <input type="text" id="inputFbApiKey" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Project ID</label>
+          <input type="text" id="inputFbProjectId" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white" />
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button id="btnSaveFirebase" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
+          Guardar y Reconectar
+        </button>
+        <button id="btnResetFirebase" class="px-3 py-2.5 rounded-xl bg-slate-800 text-amber-300 text-xs">
+          Restaurar Default
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICACIÓN -->
+  <div id="toast" class="fixed top-16 right-4 z-50 hidden bg-slate-800 border border-emerald-500/50 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium"></div>
+
+  <!-- LÓGICA INTEGRADA DE FIREBASE, PWA SERVICE WORKER Y APLICACIÓN -->
+  <script type="module">
+    import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, update, remove, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ==================== CONFIGURACIÓN FIREBASE (finanzas-ae007) ====================
+    const DEFAULT_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAV5PD7b-Y673YuyOS8XRefnosX6FuG_9E",
+      authDomain: "finanzas-ae007.firebaseapp.com",
+      databaseURL: "https://finanzas-ae007-default-rtdb.firebaseio.com",
+      projectId: "finanzas-ae007",
+      storageBucket: "finanzas-ae007.firebasestorage.app",
+      messagingSenderId: "42378026294",
+      appId: "1:42378026294:web:02c960c7edf50cd7626797",
+      measurementId: "G-L4C0THWS7S"
+    };
+
+    const STORAGE_KEY = "pareja_finance_fb_config";
+
+    function getActiveFirebaseConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return {
+          apiKey: saved.apiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
+          authDomain: saved.authDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
+          databaseURL: saved.databaseURL || DEFAULT_FIREBASE_CONFIG.databaseURL,
+          projectId: saved.projectId || DEFAULT_FIREBASE_CONFIG.projectId,
+          storageBucket: saved.storageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
+          messagingSenderId: saved.messagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+          appId: saved.appId || DEFAULT_FIREBASE_CONFIG.appId,
+          measurementId: saved.measurementId || DEFAULT_FIREBASE_CONFIG.measurementId
+        };
+      } catch {
+        return DEFAULT_FIREBASE_CONFIG;
+      }
+    }
+
+    function saveDynamicFirebaseConfig(config) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    }
+
+    function clearDynamicFirebaseConfig() {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    async function initFirebaseConnection() {
+      const config = getActiveFirebaseConfig();
+      if (!config.databaseURL || !config.apiKey) {
+        return null;
+      }
+
+      const existingApps = getApps();
+      for (const app of existingApps) {
+        await deleteApp(app);
+      }
+
+      const app = initializeApp(config);
+      const dbInstance = getDatabase(app);
+      return { app, db: dbInstance };
+    }
+
+    // ==================== ESTADO GLOBAL DE LA APP ====================
+    let db = null;
+    let unsubscribePeriodo = null;
+    let unsubscribeProyectos = null;
+    let unsubscribeConn = null;
+    let activeCategoryModalId = null;
+
+    let currentPeriod = new Date().toISOString().slice(0, 7);
+    let state = {
+      categorias: {},
+      gastos: {},
+      ingresos: {},
+      proyectos: {},
+      asignaciones: {}
+    };
+
+    let chartReservasInstance = null;
+    let chartUsuariosInstance = null;
+
+    // ==================== INICIALIZACIÓN ====================
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (window.lucide) lucide.createIcons();
+
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById("periodSelector").value = currentPeriod;
+      document.getElementById("gastoFecha").value = today;
+      document.getElementById("ingresoFecha").value = today;
+      syncCatFechaFijoVisibility();
+
+      setupInlinePWA();
+      setupInlineServiceWorker();
+      bindEvents();
+      await connectAndSync();
+    });
+
+    function setupInlinePWA() {
+      // El manifest ahora es el archivo manifest.json (ver <head>).
+    }
+
+    function setupInlineServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker.register("./sw.js").catch((err) => {
+        console.warn("Service Worker omitido:", err);
+      });
+    }
+
+    async function connectAndSync() {
+      try {
+        const conn = await initFirebaseConnection();
+        if (!conn) {
+          updateConnectionUI(false, "Configurar Firebase");
+          renderAll();
+          return;
+        }
+        db = conn.db;
+
+        if (unsubscribeConn) unsubscribeConn();
+        const connectedRef = ref(db, ".info/connected");
+        unsubscribeConn = onValue(connectedRef, (snap) => {
+          const isConnected = snap.val() === true;
+          updateConnectionUI(isConnected, isConnected ? "Conectado • finanzas-ae007" : "Reconectando...");
+        });
+
+        subscribeToPeriod(currentPeriod);
+        subscribeToProjects();
+      } catch (err) {
+        console.error("Error inicializando Firebase:", err);
+        updateConnectionUI(false, "Error de conexión");
+        showToast("No se pudo conectar a Firebase: " + err.message, true);
+      }
+    }
+
+    function subscribeToPeriod(period) {
+      if (!db) return;
+      if (unsubscribePeriodo) unsubscribePeriodo();
+
+      const periodRef = ref(db, `presupuesto_pareja/${period}`);
+      unsubscribePeriodo = onValue(periodRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        state.categorias = data.categorias || {};
+        state.gastos = data.gastos || {};
+        state.ingresos = data.ingresos || {};
+        state.asignaciones = data.asignaciones || {};
+        renderAll();
+        if (activeCategoryModalId) {
+          if (state.categorias[activeCategoryModalId]) {
+            renderCategoryModalContent(activeCategoryModalId);
+          } else {
+            closeCategoryModal();
+          }
+        }
+        if (!document.getElementById("ingresosModal").classList.contains("hidden")) {
+          renderIngresosModalContent();
+        }
+      }, (error) => {
+        console.error("Error leyendo período:", error);
+        showToast("Revisa las Reglas de Realtime Database en Firebase", true);
+      });
+    }
+
+    function subscribeToProjects() {
+      if (!db) return;
+      if (unsubscribeProyectos) unsubscribeProyectos();
+
+      const projRef = ref(db, `presupuesto_pareja/proyectos_globales`);
+      unsubscribeProyectos = onValue(projRef, (snapshot) => {
+        state.proyectos = snapshot.val() || {};
+        renderProyectos();
+        if (window.lucide) lucide.createIcons();
+      }, (error) => {
+        console.error("Error leyendo proyectos:", error);
+      });
+    }
+
+    // ==================== RENDERIZADO INTEGRAL ====================
+    function renderAll() {
+      renderDashboardKPIs();
+      renderCategoryCards();
+      renderCharts();
+      renderHistorial();
+      renderSelectOptions();
+      renderCategoriasConfig();
+      renderGastosRegistroList();
+      renderIngresosList();
+      renderProyectos();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderDashboardKPIs() {
+      const cats = Object.values(state.categorias);
+      const gastos = Object.values(state.gastos);
+      const ingresos = Object.values(state.ingresos);
+
+      const totalPresupuestado = cats.reduce((acc, c) => acc + Number(c.limite || 0), 0);
+      const totalEjecutado = gastos.reduce((acc, g) => acc + Number(g.monto || 0), 0);
+      const totalIngresos = ingresos.reduce((acc, i) => acc + Number(i.monto || 0), 0);
+      const disponible = totalPresupuestado - totalEjecutado;
+      const balanceNeto = totalIngresos - totalEjecutado;
+
+      document.getElementById("kpiPresupuestado").textContent = formatUSD(totalPresupuestado);
+      document.getElementById("kpiEjecutado").textContent = formatUSD(totalEjecutado);
+
+      const dispEl = document.getElementById("kpiDisponible");
+      dispEl.textContent = formatUSD(disponible);
+      dispEl.className = `text-base sm:text-xl font-bold mt-0.5 ${disponible >= 0 ? "text-emerald-400" : "text-rose-400"}`;
+
+      const badgeNeto = document.getElementById("badgeBalanceNeto");
+      badgeNeto.textContent = `Balance Neto: ${formatUSD(balanceNeto)}`;
+      badgeNeto.parentElement.className = `text-xs font-medium px-2.5 py-1 rounded-full transition cursor-pointer ${
+        balanceNeto >= 0 ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25" : "bg-rose-500/15 text-rose-400 hover:bg-rose-500/25"
+      }`;
+
+      const pctReal = totalPresupuestado > 0 ? Math.min(100, (totalEjecutado / totalPresupuestado) * 100) : 0;
+
+      const [year, month] = currentPeriod.split("-").map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const now = new Date();
+      const isCurrentMonth = now.getFullYear() === year && (now.getMonth() + 1) === month;
+      const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
+      const linearRatio = currentDay / daysInMonth;
+      const currentReferenceDateStr = `${currentPeriod}-${String(currentDay).padStart(2, "0")}`;
+
+      // Matemática ponderada de Ritmo Esperado:
+      // - Gastos Variables (y Gastos Fijos sin fecha definida): prorrateo lineal por día del mes (currentDay / daysInMonth).
+      // - Gastos Fijos con fecha programada: 0% esperado antes de su fecha de ejecución, 100% esperado a partir de su fecha.
+      let montoEsperadoAcumulado = 0;
+      cats.forEach((c) => {
+        const limite = Number(c.limite || 0);
+        if (c.tipo === "Gasto Fijo" && c.fechaEjecucion) {
+          if (currentReferenceDateStr >= c.fechaEjecucion) {
+            montoEsperadoAcumulado += limite;
+          }
+        } else {
+          montoEsperadoAcumulado += limite * linearRatio;
+        }
+      });
+
+      const pctEsperado = totalPresupuestado > 0
+        ? Math.min(100, (montoEsperadoAcumulado / totalPresupuestado) * 100)
+        : (linearRatio * 100);
+
+      document.getElementById("pctRealLabel").textContent = `${pctReal.toFixed(1)}%`;
+      document.getElementById("diaMesLabel").textContent = `${currentDay}/${daysInMonth}`;
+      document.getElementById("pctEsperadoLabel").textContent = `${pctEsperado.toFixed(1)}% (${formatUSD(montoEsperadoAcumulado)})`;
+
+      const barReal = document.getElementById("barReal");
+      barReal.style.width = `${pctReal}%`;
+      barReal.className = `h-full transition-all duration-500 rounded-full ${
+        pctReal > 100 ? "bg-rose-500" : pctReal > pctEsperado + 10 ? "bg-amber-400" : "bg-emerald-500"
+      }`;
+      document.getElementById("barEsperado").style.width = `${pctEsperado}%`;
+
+      const diff = pctReal - pctEsperado;
+      const statusEl = document.getElementById("ritmoStatusText");
+      if (totalPresupuestado === 0) {
+        statusEl.textContent = "Configura tus categorías en la pestaña 'Topes' para iniciar.";
+      } else if (diff <= 0) {
+        statusEl.textContent = `Buen ritmo: Vas ${Math.abs(diff).toFixed(1)}% por debajo del ritmo esperado (${formatUSD(montoEsperadoAcumulado)} proyectados al día ${currentDay}).`;
+      } else {
+        statusEl.textContent = `Atención: El gasto acumulado supera en ${diff.toFixed(1)}% el ritmo esperado (${formatUSD(montoEsperadoAcumulado)} proyectados al día ${currentDay}).`;
+      }
+    }
+
+    function renderCategoryCards() {
+      const grid = document.getElementById("categoryCardsGrid");
+      const entries = Object.entries(state.categorias);
+
+      if (entries.length === 0) {
+        grid.innerHTML = `<div class="col-span-full bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-6 text-center text-xs text-slate-400">
+          No hay categorías creadas para ${currentPeriod}. Ve a "Topes" o clona el mes anterior.
+        </div>`;
+        return;
+      }
+
+      const gastosPorCat = {};
+      const countPorCat = {};
+      Object.values(state.gastos).forEach(g => {
+        gastosPorCat[g.categoriaId] = (gastosPorCat[g.categoriaId] || 0) + Number(g.monto || 0);
+        countPorCat[g.categoriaId] = (countPorCat[g.categoriaId] || 0) + 1;
+      });
+
+      grid.innerHTML = entries.map(([id, cat]) => {
+        const limite = Number(cat.limite || 0);
+        const gastado = gastosPorCat[id] || 0;
+        const countGastos = countPorCat[id] || 0;
+        const reserva = limite - gastado;
+        const pct = limite > 0 ? (gastado / limite) * 100 : 0;
+
+        let badgeColor = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+        let barColor = "bg-emerald-500";
+        if (pct >= 100) {
+          badgeColor = "bg-rose-500/15 text-rose-400 border-rose-500/30";
+          barColor = "bg-rose-500";
+        } else if (pct >= 75) {
+          badgeColor = "bg-amber-500/15 text-amber-400 border-amber-500/30";
+          barColor = "bg-amber-400";
+        }
+
+        const refInfo = (cat.monedaRef && cat.monedaRef !== "USD" && cat.tasaRef)
+          ? `<span class="text-[10px] text-slate-400">≈ ${(reserva * Number(cat.tasaRef)).toLocaleString()} ${cat.monedaRef}</span>`
+          : "";
+
+        const fixedDateBadge = (cat.tipo === "Gasto Fijo" && cat.fechaEjecucion)
+          ? `<span class="inline-block text-[10px] font-medium text-sky-400 mt-0.5">Vence/Ejecuta: ${cat.fechaEjecucion}</span>`
+          : "";
+
+        return `
+          <div onclick="openCategoryExpensesModal('${id}')" role="button" tabindex="0" class="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 active:scale-[0.99] rounded-2xl p-4 space-y-2.5 transition cursor-pointer">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400">${cat.tipo || "Tope"} • ${countGastos} ${countGastos === 1 ? "gasto" : "gastos"}</span>
+                <h4 class="font-bold text-sm text-white">${cat.nombre}</h4>
+                ${fixedDateBadge}
+              </div>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-lg border ${badgeColor}">
+                ${pct.toFixed(0)}%
+              </span>
+            </div>
+
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full ${barColor} transition-all duration-300" style="width: ${Math.min(100, pct)}%"></div>
+            </div>
+
+            <div class="flex items-end justify-between text-xs pt-0.5">
+              <div>
+                <span class="text-slate-400">Gastado:</span>
+                <span class="font-semibold text-slate-200">${formatUSD(gastado)}</span>
+                <span class="text-slate-500">/ ${formatUSD(limite)}</span>
+              </div>
+              <div class="text-right">
+                <span class="block font-bold ${reserva >= 0 ? "text-emerald-400" : "text-rose-400"}">
+                  ${reserva >= 0 ? "Queda: " : "Exceso: "}${formatUSD(Math.abs(reserva))}
+                </span>
+                ${refInfo}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderCharts() {
+      const gastosPorCat = {};
+      Object.values(state.gastos).forEach(g => {
+        gastosPorCat[g.categoriaId] = (gastosPorCat[g.categoriaId] || 0) + Number(g.monto || 0);
+      });
+
+      const catLabels = [];
+      const catReservas = [];
+      Object.entries(state.categorias).forEach(([id, cat]) => {
+        const rem = Math.max(0, Number(cat.limite || 0) - (gastosPorCat[id] || 0));
+        if (rem > 0) {
+          catLabels.push(cat.nombre);
+          catReservas.push(rem);
+        }
+      });
+
+      const ctxRes = document.getElementById("chartReservas").getContext("2d");
+      if (chartReservasInstance) chartReservasInstance.destroy();
+      chartReservasInstance = new Chart(ctxRes, {
+        type: "doughnut",
+        data: {
+          labels: catLabels.length ? catLabels : ["Sin reservas"],
+          datasets: [{
+            data: catReservas.length ? catReservas : [1],
+            backgroundColor: catReservas.length
+              ? ["#10b981", "#38bdf8", "#f59e0b", "#a855f7", "#ec4899", "#6366f1", "#14b8a6"]
+              : ["#1e293b"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: {
+            legend: { position: "bottom", labels: { color: "#cbd5e1", font: { size: 11 } } }
+          }
+        }
+      });
+
+      const userTotals = { Charles: 0, Mariana: 0, Compartido: 0 };
+      Object.values(state.gastos).forEach(g => {
+        const u = g.usuario || "Compartido";
+        userTotals[u] = (userTotals[u] || 0) + Number(g.monto || 0);
+      });
+
+      const uLabels = Object.keys(userTotals).filter(k => userTotals[k] > 0);
+      const uData = uLabels.map(k => userTotals[k]);
+
+      const ctxUsr = document.getElementById("chartUsuarios").getContext("2d");
+      if (chartUsuariosInstance) chartUsuariosInstance.destroy();
+      chartUsuariosInstance = new Chart(ctxUsr, {
+        type: "pie",
+        data: {
+          labels: uLabels.length ? uLabels : ["Sin gastos"],
+          datasets: [{
+            data: uData.length ? uData : [1],
+            backgroundColor: uData.length ? ["#38bdf8", "#f43f5e", "#10b981"] : ["#1e293b"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { color: "#cbd5e1", font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderHistorial() {
+      const fFecha = document.getElementById("filterFecha").value;
+      const fCat = document.getElementById("filterCategoria").value;
+      const fUsr = document.getElementById("filterUsuario").value;
+
+      const list = Object.entries(state.gastos)
+        .map(([id, item]) => ({ id, ...item }))
+        .filter(item => (!fFecha || item.fecha === fFecha))
+        .filter(item => (!fCat || item.categoriaId === fCat))
+        .filter(item => (!fUsr || item.usuario === fUsr))
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+      const container = document.getElementById("historialList");
+      if (list.length === 0) {
+        container.innerHTML = `<p class="py-6 text-center text-xs text-slate-500">No hay gastos que coincidan con el filtro.</p>`;
+        return;
+      }
+
+      container.innerHTML = list.map(g => `
+        <div class="py-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-slate-100 truncate">${g.desc}</p>
+            <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+              <span>${g.fecha}</span>
+              <span>•</span>
+              <span class="text-emerald-400">${g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "General"}</span>
+              <span>•</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${g.usuario}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-sm font-bold text-rose-400">-${formatUSD(g.monto)}</span>
+            <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderSelectOptions() {
+      const entries = Object.entries(state.categorias);
+      const optionsHtml = entries.map(([id, c]) => `<option value="${id}">${c.nombre}</option>`).join("");
+
+      document.getElementById("gastoCategoria").innerHTML = `<option value="">Selecciona categoría...</option>${optionsHtml}`;
+      document.getElementById("filterCategoria").innerHTML = `<option value="">Categoría: Todas</option>${optionsHtml}`;
+      document.getElementById("editGastoCategoria").innerHTML = `<option value="">Selecciona categoría...</option>${optionsHtml}`;
+    }
+
+    function renderCategoriasConfig() {
+      const list = document.getElementById("categoriasConfigList");
+      const entries = Object.entries(state.categorias);
+
+      if (entries.length === 0) {
+        list.innerHTML = `<p class="text-center text-xs text-slate-500 py-4">Aún no has creado categorías para este mes.</p>`;
+        return;
+      }
+
+      list.innerHTML = entries.map(([id, c]) => `
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-bold text-sm text-white">${c.nombre}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">${c.tipo}</span>
+              ${(c.tipo === "Gasto Fijo" && c.fechaEjecucion)
+                ? `<span class="text-[10px] px-2 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 text-sky-400 font-medium">Ejecución: ${c.fechaEjecucion}</span>`
+                : ""}
+            </div>
+            <p class="text-xs text-emerald-400 font-semibold mt-0.5">Tope: ${formatUSD(c.limite)}</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="editCategoria('${id}')" class="p-2 rounded-lg bg-slate-800 text-sky-400 hover:bg-slate-700">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteCategoria('${id}')" class="p-2 rounded-lg bg-slate-800 text-rose-400 hover:bg-slate-700">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderGastosRegistroList() {
+      const entries = Object.entries(state.gastos)
+        .map(([id, g]) => ({ id, ...g }))
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+      const total = entries.reduce((acc, g) => acc + Number(g.monto || 0), 0);
+      document.getElementById("totalGastosRegistroLabel").textContent = formatUSD(total);
+
+      const container = document.getElementById("gastosRegistroList");
+      if (entries.length === 0) {
+        container.innerHTML = `<p class="py-4 text-center text-xs text-slate-500">Sin gastos registrados en este mes.</p>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(g => `
+        <div class="py-2.5 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-200 truncate">${g.desc}</p>
+            <p class="text-[11px] text-slate-400">${g.fecha} • <span class="text-emerald-400">${g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "General"}</span> • ${g.usuario}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-bold text-rose-400">-${formatUSD(g.monto)}</span>
+            <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderIngresosList() {
+      const entries = Object.entries(state.ingresos)
+        .map(([id, i]) => ({ id, ...i }))
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+      const total = entries.reduce((acc, i) => acc + Number(i.monto || 0), 0);
+      document.getElementById("totalIngresosLabel").textContent = formatUSD(total);
+
+      const container = document.getElementById("ingresosList");
+      if (entries.length === 0) {
+        container.innerHTML = `<p class="py-4 text-center text-xs text-slate-500">Sin ingresos registrados en este mes.</p>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(i => `
+        <div class="py-2.5 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-200 truncate">${i.desc}</p>
+            <p class="text-[11px] text-slate-400">${i.fecha} • ${i.categoria} • ${i.usuario}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-bold text-emerald-400">+${formatUSD(i.monto)}</span>
+            <button onclick="openEditIngresoModal('${i.id}')" title="Editar ingreso" class="text-slate-400 hover:text-sky-400 p-1">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteIngreso('${i.id}')" title="Eliminar ingreso" class="text-slate-500 hover:text-rose-400 p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderCategoryModalContent(catId) {
+      const cat = state.categorias[catId];
+      if (!cat) return;
+
+      const items = Object.entries(state.gastos)
+        .map(([id, g]) => ({ id, ...g }))
+        .filter(g => g.categoriaId === catId)
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+      const gastado = items.reduce((acc, g) => acc + Number(g.monto || 0), 0);
+      const limite = Number(cat.limite || 0);
+      const queda = limite - gastado;
+
+      document.getElementById("catModalTitle").textContent = `Gastos: ${cat.nombre}`;
+      document.getElementById("catModalSummary").textContent =
+        `Tope: ${formatUSD(limite)} • Gastado: ${formatUSD(gastado)} • ${queda >= 0 ? "Queda: " : "Exceso: "}${formatUSD(Math.abs(queda))}`;
+
+      const listEl = document.getElementById("catModalList");
+      if (items.length === 0) {
+        listEl.innerHTML = `<p class="py-6 text-center text-xs text-slate-500">No hay gastos registrados en esta categoría durante ${currentPeriod}.</p>`;
+      } else {
+        listEl.innerHTML = items.map(g => `
+          <div class="py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-100 truncate">${g.desc}</p>
+              <p class="text-[11px] text-slate-400">${g.fecha} • <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${g.usuario}</span></p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-sm font-bold text-rose-400">-${formatUSD(g.monto)}</span>
+              <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `).join("");
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderIngresosModalContent() {
+      const items = Object.entries(state.ingresos)
+        .map(([id, i]) => ({ id, ...i }))
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+      const total = items.reduce((acc, i) => acc + Number(i.monto || 0), 0);
+      document.getElementById("ingresosModalSummary").textContent =
+        `Período ${currentPeriod} • Total Ingresos: ${formatUSD(total)} (${items.length} ${items.length === 1 ? "registro" : "registros"})`;
+
+      const listEl = document.getElementById("ingresosModalList");
+      if (items.length === 0) {
+        listEl.innerHTML = `<p class="py-6 text-center text-xs text-slate-500">No hay ingresos registrados en ${currentPeriod}.</p>`;
+      } else {
+        listEl.innerHTML = items.map(i => `
+          <div class="py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-100 truncate">${i.desc}</p>
+              <p class="text-[11px] text-slate-400">${i.fecha} • <span class="text-emerald-400">${i.categoria}</span> • ${i.usuario}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-sm font-bold text-emerald-400">+${formatUSD(i.monto)}</span>
+              <button onclick="openEditIngresoModal('${i.id}')" title="Editar ingreso" class="text-slate-400 hover:text-sky-400 p-1">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteIngreso('${i.id}')" title="Eliminar ingreso" class="text-slate-500 hover:text-rose-400 p-1">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `).join("");
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderProyectos() {
+      const totalPresupuestado = Object.values(state.categorias).reduce((a, c) => a + Number(c.limite || 0), 0);
+      const totalGastado = Object.values(state.gastos).reduce((a, g) => a + Number(g.monto || 0), 0);
+      const totalIngresos = Object.values(state.ingresos).reduce((a, i) => a + Number(i.monto || 0), 0);
+      const totalAsignadoMes = Object.values(state.asignaciones).reduce((a, as) => a + Number(as.monto || 0), 0);
+
+      const reservaNoGastada = Math.max(0, totalPresupuestado - totalGastado);
+      const excedenteIngresos = Math.max(0, totalIngresos - totalPresupuestado);
+      const sobranteDisponible = Math.max(0, (reservaNoGastada + excedenteIngresos) - totalAsignadoMes);
+
+      document.getElementById("sobranteTotalDisplay").textContent = formatUSD(sobranteDisponible);
+      document.getElementById("montoTransferirProyecto").max = sobranteDisponible;
+
+      const entries = Object.entries(state.proyectos);
+      const select = document.getElementById("selectProyectoDestino");
+      select.innerHTML = `<option value="">Selecciona Proyecto Destino...</option>` +
+        entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Falta ${formatUSD(Math.max(0, p.objetivo - (p.acumulado || 0)))})</option>`).join("");
+
+      const selectOrigen = document.getElementById("selectProyectoOrigen");
+      const selectDestinoTransfer = document.getElementById("selectProyectoDestinoTransfer");
+      if (selectOrigen && selectDestinoTransfer) {
+        selectOrigen.innerHTML = `<option value="">Proyecto Origen...</option>` +
+          entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Disp: ${formatUSD(p.acumulado || 0)})</option>`).join("");
+        selectDestinoTransfer.innerHTML = `<option value="">Proyecto Destino...</option>` +
+          entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Acum: ${formatUSD(p.acumulado || 0)})</option>`).join("");
+      }
+
+      const grid = document.getElementById("proyectosGrid");
+      if (entries.length === 0) {
+        grid.innerHTML = `<div class="col-span-full bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-6 text-center text-xs text-slate-400">
+          Crea tu primer proyecto o meta compartida.
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = entries.map(([id, p]) => {
+        const obj = Number(p.objetivo || 0);
+        const acum = Number(p.acumulado || 0);
+        const pct = obj > 0 ? Math.min(100, (acum / obj) * 100) : 0;
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex justify-between items-start gap-2">
+              <div>
+                <h4 class="font-bold text-sm text-white">${p.nombre}</h4>
+                <p class="text-xs text-slate-400 mt-0.5">Meta: ${formatUSD(obj)}</p>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="openEditProyectoModal('${id}')" title="Editar proyecto" class="p-1.5 rounded-lg bg-slate-800 text-sky-400 hover:bg-slate-700 transition">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="deleteProyecto('${id}')" title="Eliminar proyecto" class="p-1.5 rounded-lg bg-slate-800 text-rose-400 hover:bg-slate-700 transition">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-emerald-400">Acumulado: ${formatUSD(acum)}</span>
+              <span class="text-slate-300">${pct.toFixed(1)}%</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ==================== EVENTOS Y ACCIONES FIREBASE ====================
+    function syncCatFechaFijoVisibility() {
+      const isFijo = document.getElementById("catTipo").value === "Gasto Fijo";
+      const container = document.getElementById("catFechaFijoContainer");
+      const inputFecha = document.getElementById("catFechaFijo");
+      container.classList.toggle("hidden", !isFijo);
+      inputFecha.required = isFijo;
+      if (isFijo && !inputFecha.value) {
+        inputFecha.value = `${currentPeriod}-01`;
+      }
+    }
+
+    function bindEvents() {
+      document.getElementById("periodSelector").addEventListener("change", (e) => {
+        currentPeriod = e.target.value;
+        subscribeToPeriod(currentPeriod);
+      });
+
+      document.getElementById("catTipo").addEventListener("change", syncCatFechaFijoVisibility);
+
+      const modal = document.getElementById("firebaseModal");
+      const openModal = () => {
+        const cfg = getActiveFirebaseConfig();
+        document.getElementById("inputFbDbUrl").value = cfg.databaseURL || "";
+        document.getElementById("inputFbApiKey").value = cfg.apiKey || "";
+        document.getElementById("inputFbProjectId").value = cfg.projectId || "";
+        modal.classList.remove("hidden");
+      };
+      document.getElementById("btnOpenFirebaseModal").addEventListener("click", openModal);
+      document.getElementById("btnHeaderConfig").addEventListener("click", openModal);
+      document.getElementById("btnCloseFirebaseModal").addEventListener("click", () => modal.classList.add("hidden"));
+
+      document.getElementById("btnCloseCatModal").addEventListener("click", closeCategoryModal);
+      document.getElementById("btnCloseIngresosModal").addEventListener("click", () => {
+        document.getElementById("ingresosModal").classList.add("hidden");
+      });
+
+      const closeEditGasto = () => document.getElementById("editGastoModal").classList.add("hidden");
+      document.getElementById("btnCloseEditGastoModal").addEventListener("click", closeEditGasto);
+      document.getElementById("btnCancelEditGasto").addEventListener("click", closeEditGasto);
+
+      const closeEditIngreso = () => document.getElementById("editIngresoModal").classList.add("hidden");
+      document.getElementById("btnCloseEditIngresoModal").addEventListener("click", closeEditIngreso);
+      document.getElementById("btnCancelEditIngreso").addEventListener("click", closeEditIngreso);
+
+      const closeEditProyecto = () => document.getElementById("editProyectoModal").classList.add("hidden");
+      document.getElementById("btnCloseEditProyectoModal").addEventListener("click", closeEditProyecto);
+      document.getElementById("btnCancelEditProyecto").addEventListener("click", closeEditProyecto);
+
+      document.getElementById("formEditGasto").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const gastoId = document.getElementById("editGastoId").value;
+        const oldCatId = document.getElementById("editGastoOldCatId").value;
+        const oldMonto = Number(document.getElementById("editGastoOldMonto").value || 0);
+
+        const newCatId = document.getElementById("editGastoCategoria").value;
+        const catObj = state.categorias[newCatId];
+        if (!catObj) return showToast("Selecciona una categoría válida", true);
+
+        const newMonto = Number(document.getElementById("editGastoMonto").value);
+        const updatedGasto = {
+          fecha: document.getElementById("editGastoFecha").value,
+          categoriaId: newCatId,
+          categoriaNombre: catObj.nombre,
+          monto: newMonto,
+          usuario: document.getElementById("editGastoUsuario").value,
+          desc: document.getElementById("editGastoDesc").value.trim()
+        };
+
+        await update(ref(db, `presupuesto_pareja/${currentPeriod}/gastos/${gastoId}`), updatedGasto);
+
+        if (oldCatId === newCatId) {
+          const diff = newMonto - oldMonto;
+          const nextGastado = Math.max(0, Number(catObj.gastado || 0) + diff);
+          await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${newCatId}`), { gastado: nextGastado });
+        } else {
+          if (oldCatId && state.categorias[oldCatId]) {
+            const prevCatGastado = Math.max(0, Number(state.categorias[oldCatId].gastado || 0) - oldMonto);
+            await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${oldCatId}`), { gastado: prevCatGastado });
+          }
+          const nextCatGastado = Math.max(0, Number(catObj.gastado || 0) + newMonto);
+          await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${newCatId}`), { gastado: nextCatGastado });
+        }
+
+        closeEditGasto();
+        showToast("Gasto actualizado y reservas recalculadas");
+      });
+
+      document.getElementById("formEditIngreso").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const ingresoId = document.getElementById("editIngresoId").value;
+        const updatedIngreso = {
+          fecha: document.getElementById("editIngresoFecha").value,
+          categoria: document.getElementById("editIngresoCategoria").value,
+          monto: Number(document.getElementById("editIngresoMonto").value),
+          usuario: document.getElementById("editIngresoUsuario").value,
+          desc: document.getElementById("editIngresoDesc").value.trim()
+        };
+
+        await update(ref(db, `presupuesto_pareja/${currentPeriod}/ingresos/${ingresoId}`), updatedIngreso);
+        closeEditIngreso();
+        showToast("Ingreso actualizado correctamente");
+      });
+
+      document.getElementById("formEditProyecto").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const proyId = document.getElementById("editProyId").value;
+        if (!proyId || !state.proyectos[proyId]) return showToast("Proyecto no encontrado", true);
+
+        const nombre = document.getElementById("editProyNombre").value.trim();
+        const objetivo = Number(document.getElementById("editProyObjetivo").value);
+        const acumulado = Number(document.getElementById("editProyAcumulado").value);
+
+        if (!nombre) return showToast("El nombre es obligatorio", true);
+        if (objetivo <= 0) return showToast("El objetivo debe ser mayor a 0", true);
+        if (acumulado < 0) return showToast("El saldo acumulado no puede ser negativo", true);
+
+        await update(ref(db, `presupuesto_pareja/proyectos_globales/${proyId}`), {
+          nombre,
+          objetivo,
+          acumulado
+        });
+
+        closeEditProyecto();
+        showToast("Proyecto actualizado correctamente");
+      });
+
+      document.getElementById("btnSaveFirebase").addEventListener("click", async () => {
+        const databaseURL = document.getElementById("inputFbDbUrl").value.trim();
+        const apiKey = document.getElementById("inputFbApiKey").value.trim();
+        const projectId = document.getElementById("inputFbProjectId").value.trim();
+        if (!databaseURL || !apiKey) return showToast("Database URL y API Key son obligatorios", true);
+
+        saveDynamicFirebaseConfig({ databaseURL, apiKey, projectId });
+        modal.classList.add("hidden");
+        showToast("Reconectando a Firebase...");
+        await connectAndSync();
+      });
+
+      document.getElementById("btnResetFirebase").addEventListener("click", async () => {
+        clearDynamicFirebaseConfig();
+        modal.classList.add("hidden");
+        showToast("Restaurado a finanzas-ae007");
+        await connectAndSync();
+      });
+
+      ["filterFecha", "filterCategoria", "filterUsuario"].forEach(id => {
+        document.getElementById(id).addEventListener("change", renderHistorial);
+      });
+
+      document.getElementById("formCategoria").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const editId = document.getElementById("catEditId").value;
+        const tipoVal = document.getElementById("catTipo").value;
+        const fechaEjecucionVal = tipoVal === "Gasto Fijo"
+          ? (document.getElementById("catFechaFijo").value || `${currentPeriod}-01`)
+          : null;
+
+        const payload = {
+          nombre: document.getElementById("catNombre").value.trim(),
+          tipo: tipoVal,
+          fechaEjecucion: fechaEjecucionVal,
+          limite: Number(document.getElementById("catLimite").value),
+          monedaRef: document.getElementById("catMonedaRef").value,
+          tasaRef: Number(document.getElementById("catTasaRef").value) || null
+        };
+
+        if (editId) {
+          await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${editId}`), payload);
+          showToast("Categoría actualizada");
+        } else {
+          await push(ref(db, `presupuesto_pareja/${currentPeriod}/categorias`), { ...payload, gastado: 0 });
+          showToast("Categoría creada");
+        }
+        resetCategoryForm();
+      });
+
+      document.getElementById("btnCancelCatEdit").addEventListener("click", resetCategoryForm);
+
+      document.getElementById("btnCloneMonth").addEventListener("click", async () => {
+        if (!ensureDb()) return;
+        const [y, m] = currentPeriod.split("-").map(Number);
+        const prevDate = new Date(y, m - 2, 1);
+        const prevPeriod = prevDate.toISOString().slice(0, 7);
+
+        const snap = await get(ref(db, `presupuesto_pareja/${prevPeriod}/categorias`));
+        if (!snap.exists()) {
+          return showToast(`No hay presupuesto guardado en ${prevPeriod}`, true);
+        }
+
+        const daysInTargetMonth = new Date(y, m, 0).getDate();
+        const cloned = {};
+        Object.entries(snap.val()).forEach(([k, val]) => {
+          let adjustedFechaEjecucion = null;
+          if (val.tipo === "Gasto Fijo" && val.fechaEjecucion) {
+            const origDay = Math.min(daysInTargetMonth, Number(val.fechaEjecucion.split("-")[2] || 1));
+            adjustedFechaEjecucion = `${currentPeriod}-${String(origDay).padStart(2, "0")}`;
+          }
+          cloned[k] = {
+            ...val,
+            fechaEjecucion: adjustedFechaEjecucion,
+            gastado: 0
+          };
+        });
+
+        await set(ref(db, `presupuesto_pareja/${currentPeriod}/categorias`), cloned);
+        showToast(`Estructura clonada desde ${prevPeriod}`);
+      });
+
+      document.getElementById("formGasto").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const catId = document.getElementById("gastoCategoria").value;
+        const catObj = state.categorias[catId];
+        if (!catObj) return showToast("Selecciona una categoría válida", true);
+
+        const monto = Number(document.getElementById("gastoMonto").value);
+        const gastoData = {
+          fecha: document.getElementById("gastoFecha").value,
+          categoriaId: catId,
+          categoriaNombre: catObj.nombre,
+          monto,
+          usuario: document.getElementById("gastoUsuario").value,
+          desc: document.getElementById("gastoDesc").value.trim()
+        };
+
+        await push(ref(db, `presupuesto_pareja/${currentPeriod}/gastos`), gastoData);
+        const nuevoGastado = Number(catObj.gastado || 0) + monto;
+        await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${catId}`), { gastado: nuevoGastado });
+
+        document.getElementById("gastoMonto").value = "";
+        document.getElementById("gastoDesc").value = "";
+        showToast("Gasto registrado y descontado de la reserva");
+      });
+
+      document.getElementById("formIngreso").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const ingresoData = {
+          fecha: document.getElementById("ingresoFecha").value,
+          categoria: document.getElementById("ingresoCategoria").value,
+          monto: Number(document.getElementById("ingresoMonto").value),
+          usuario: document.getElementById("ingresoUsuario").value,
+          desc: document.getElementById("ingresoDesc").value.trim()
+        };
+
+        await push(ref(db, `presupuesto_pareja/${currentPeriod}/ingresos`), ingresoData);
+        document.getElementById("ingresoMonto").value = "";
+        document.getElementById("ingresoDesc").value = "";
+        showToast("Ingreso registrado correctamente");
+      });
+
+      document.getElementById("formProyecto").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        await push(ref(db, `presupuesto_pareja/proyectos_globales`), {
+          nombre: document.getElementById("proyNombre").value.trim(),
+          objetivo: Number(document.getElementById("proyObjetivo").value),
+          acumulado: 0
+        });
+        document.getElementById("proyNombre").value = "";
+        document.getElementById("proyObjetivo").value = "";
+        showToast("Proyecto creado");
+      });
+
+      document.getElementById("btnAsignarSobrante").addEventListener("click", async () => {
+        if (!ensureDb()) return;
+        const proyId = document.getElementById("selectProyectoDestino").value;
+        const monto = Number(document.getElementById("montoTransferirProyecto").value);
+        const maxSobrante = Number(document.getElementById("montoTransferirProyecto").max);
+
+        if (!proyId) return showToast("Selecciona un proyecto destino", true);
+        if (!monto || monto <= 0) return showToast("Ingresa un monto válido", true);
+        if (monto > maxSobrante + 0.01) return showToast("El monto excede el sobrante disponible", true);
+
+        const proy = state.proyectos[proyId];
+        const nuevoAcumulado = Number(proy.acumulado || 0) + monto;
+
+        await update(ref(db, `presupuesto_pareja/proyectos_globales/${proyId}`), { acumulado: nuevoAcumulado });
+        await push(ref(db, `presupuesto_pareja/${currentPeriod}/asignaciones`), {
+          fecha: new Date().toISOString().slice(0, 10),
+          proyectoId: proyId,
+          proyectoNombre: proy.nombre,
+          monto
+        });
+
+        document.getElementById("montoTransferirProyecto").value = "";
+        showToast(`¡${formatUSD(monto)} asignados a ${proy.nombre}!`);
+      });
+
+      document.getElementById("btnTransferirEntreProyectos").addEventListener("click", async () => {
+        if (!ensureDb()) return;
+        const origenId = document.getElementById("selectProyectoOrigen").value;
+        const destinoId = document.getElementById("selectProyectoDestinoTransfer").value;
+        const monto = Number(document.getElementById("montoTransferEntreProyectos").value);
+
+        if (!origenId || !destinoId) return showToast("Selecciona proyecto origen y destino", true);
+        if (origenId === destinoId) return showToast("El origen y destino deben ser distintos", true);
+        if (!monto || monto <= 0) return showToast("Ingresa un monto válido", true);
+
+        const proyOrigen = state.proyectos[origenId];
+        const proyDestino = state.proyectos[destinoId];
+        if (!proyOrigen || !proyDestino) return showToast("Proyecto inválido", true);
+
+        const saldoOrigen = Number(proyOrigen.acumulado || 0);
+        if (monto > saldoOrigen + 0.001) {
+          return showToast(`Saldo insuficiente en ${proyOrigen.nombre} (${formatUSD(saldoOrigen)})`, true);
+        }
+
+        const nuevoSaldoOrigen = Math.max(0, Number((saldoOrigen - monto).toFixed(2)));
+        const nuevoSaldoDestino = Number((Number(proyDestino.acumulado || 0) + monto).toFixed(2));
+
+        await update(ref(db, `presupuesto_pareja/proyectos_globales/${origenId}`), { acumulado: nuevoSaldoOrigen });
+        await update(ref(db, `presupuesto_pareja/proyectos_globales/${destinoId}`), { acumulado: nuevoSaldoDestino });
+
+        await push(ref(db, `presupuesto_pareja/transferencias_proyectos`), {
+          fecha: new Date().toISOString().slice(0, 10),
+          origenId,
+          origenNombre: proyOrigen.nombre,
+          destinoId,
+          destinoNombre: proyDestino.nombre,
+          monto
+        });
+
+        document.getElementById("montoTransferEntreProyectos").value = "";
+        showToast(`Transferidos ${formatUSD(monto)} de ${proyOrigen.nombre} a ${proyDestino.nombre}`);
+      });
+    }
+
+    // ==================== FUNCIONES GLOBALES WINDOW ====================
+    window.switchTab = (tabName) => {
+      ["dashboard", "movimientos", "presupuesto", "proyectos"].forEach(v => {
+        document.getElementById(`view-${v}`).classList.toggle("hidden", v !== tabName);
+      });
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        const active = btn.dataset.tab === tabName;
+        btn.classList.toggle("text-emerald-400", active);
+        btn.classList.toggle("text-slate-400", !active);
+      });
+    };
+
+    window.toggleMoveForm = (type) => {
+      const isGasto = type === "gasto";
+      document.getElementById("formGasto").classList.toggle("hidden", !isGasto);
+      document.getElementById("gastosRegistradosBox").classList.toggle("hidden", !isGasto);
+      document.getElementById("formIngreso").classList.toggle("hidden", isGasto);
+      document.getElementById("ingresosRegistradosBox").classList.toggle("hidden", isGasto);
+
+      document.getElementById("subTabGasto").className = isGasto
+        ? "py-3 rounded-xl font-semibold text-sm bg-rose-500/20 text-rose-400 border border-rose-500/40 transition"
+        : "py-3 rounded-xl font-semibold text-sm text-slate-400 hover:text-slate-200 transition";
+
+      document.getElementById("subTabIngreso").className = !isGasto
+        ? "py-3 rounded-xl font-semibold text-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition"
+        : "py-3 rounded-xl font-semibold text-sm text-slate-400 hover:text-slate-200 transition";
+    };
+
+    window.openCategoryExpensesModal = (catId) => {
+      if (!state.categorias[catId]) return;
+      activeCategoryModalId = catId;
+      renderCategoryModalContent(catId);
+      document.getElementById("categoryExpensesModal").classList.remove("hidden");
+    };
+
+    function closeCategoryModal() {
+      activeCategoryModalId = null;
+      document.getElementById("categoryExpensesModal").classList.add("hidden");
+    }
+
+    window.openIngresosModal = () => {
+      renderIngresosModalContent();
+      document.getElementById("ingresosModal").classList.remove("hidden");
+    };
+
+    window.openEditGastoModal = (id) => {
+      const g = state.gastos[id];
+      if (!g) return;
+      renderSelectOptions();
+      document.getElementById("editGastoId").value = id;
+      document.getElementById("editGastoOldCatId").value = g.categoriaId || "";
+      document.getElementById("editGastoOldMonto").value = g.monto || 0;
+      document.getElementById("editGastoFecha").value = g.fecha || "";
+      document.getElementById("editGastoCategoria").value = g.categoriaId || "";
+      document.getElementById("editGastoMonto").value = g.monto || "";
+      document.getElementById("editGastoUsuario").value = g.usuario || "Compartido";
+      document.getElementById("editGastoDesc").value = g.desc || "";
+      document.getElementById("editGastoModal").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    };
+
+    window.openEditIngresoModal = (id) => {
+      const i = state.ingresos[id];
+      if (!i) return;
+      document.getElementById("editIngresoId").value = id;
+      document.getElementById("editIngresoFecha").value = i.fecha || "";
+      document.getElementById("editIngresoCategoria").value = i.categoria || "Salario / Otros";
+      document.getElementById("editIngresoMonto").value = i.monto || "";
+      document.getElementById("editIngresoUsuario").value = i.usuario || "Compartido";
+      document.getElementById("editIngresoDesc").value = i.desc || "";
+      document.getElementById("editIngresoModal").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    };
+
+    window.openEditProyectoModal = (id) => {
+      const p = state.proyectos[id];
+      if (!p) return;
+      document.getElementById("editProyId").value = id;
+      document.getElementById("editProyNombre").value = p.nombre || "";
+      document.getElementById("editProyObjetivo").value = p.objetivo || "";
+      document.getElementById("editProyAcumulado").value = p.acumulado ?? 0;
+      document.getElementById("editProyectoModal").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    };
+
+    window.editCategoria = (id) => {
+      const cat = state.categorias[id];
+      if (!cat) return;
+      document.getElementById("catEditId").value = id;
+      document.getElementById("catNombre").value = cat.nombre;
+      document.getElementById("catTipo").value = cat.tipo;
+      syncCatFechaFijoVisibility();
+      document.getElementById("catFechaFijo").value = cat.fechaEjecucion || (cat.tipo === "Gasto Fijo" ? `${currentPeriod}-01` : "");
+      document.getElementById("catLimite").value = cat.limite;
+      document.getElementById("catMonedaRef").value = cat.monedaRef || "USD";
+      document.getElementById("catTasaRef").value = cat.tasaRef || "";
+      document.getElementById("catFormTitle").textContent = `Editando: ${cat.nombre}`;
+      document.getElementById("btnCancelCatEdit").classList.remove("hidden");
+    };
+
+    window.deleteCategoria = async (id) => {
+      if (!ensureDb() || !confirm("¿Eliminar esta categoría del presupuesto?")) return;
+      await remove(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${id}`));
+      showToast("Categoría eliminada");
+    };
+
+    window.deleteGasto = async (id, catId, monto) => {
+      if (!ensureDb() || !confirm("¿Eliminar este gasto y restaurar la reserva?")) return;
+      await remove(ref(db, `presupuesto_pareja/${currentPeriod}/gastos/${id}`));
+      if (state.categorias[catId]) {
+        const nuevo = Math.max(0, Number(state.categorias[catId].gastado || 0) - Number(monto));
+        await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${catId}`), { gastado: nuevo });
+      }
+      showToast("Gasto eliminado y saldo restaurado");
+    };
+
+    window.deleteIngreso = async (id) => {
+      if (!ensureDb() || !confirm("¿Eliminar este registro de ingreso?")) return;
+      await remove(ref(db, `presupuesto_pareja/${currentPeriod}/ingresos/${id}`));
+      showToast("Ingreso eliminado");
+    };
+
+    window.deleteProyecto = async (id) => {
+      if (!ensureDb() || !confirm("¿Eliminar este proyecto?")) return;
+      await remove(ref(db, `presupuesto_pareja/proyectos_globales/${id}`));
+      showToast("Proyecto eliminado");
+    };
+
+    // ==================== UTILIDADES ====================
+    function resetCategoryForm() {
+      document.getElementById("formCategoria").reset();
+      document.getElementById("catEditId").value = "";
+      document.getElementById("catFormTitle").textContent = "Nueva Categoría / Tope";
+      document.getElementById("btnCancelCatEdit").classList.add("hidden");
+      syncCatFechaFijoVisibility();
+    }
+
+    function ensureDb() {
+      if (!db) {
+        showToast("Configura primero la conexión Firebase", true);
+        document.getElementById("firebaseModal").classList.remove("hidden");
+        return false;
+      }
+      return true;
+    }
+
+    function updateConnectionUI(connected, text) {
+      const dot = document.getElementById("connDot");
+      const label = document.getElementById("connText");
+      dot.className = `w-2 h-2 rounded-full ${connected ? "bg-emerald-400" : "bg-rose-500 animate-pulse"}`;
+      label.textContent = text;
+    }
+
+    function formatUSD(val) {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(val || 0));
+    }
+
+    function showToast(msg, isError = false) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = `fixed top-16 right-4 z-50 px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold border transition ${
+        isError ? "bg-rose-950 border-rose-500 text-rose-200" : "bg-slate-800 border-emerald-500/60 text-emerald-300"
+      }`;
+      t.classList.remove("hidden");
+      setTimeout(() => t.classList.add("hidden"), 3200);
+    }
+  </script>
+</body>
+</html>
