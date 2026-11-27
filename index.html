@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>ParejaFinance | Control Ejecutivo & Proyectos</title>
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+  <link id="dynamicManifest" rel="manifest" />
+  <link id="dynamicAppleIcon" rel="apple-touch-icon" />
+  <link id="dynamicFavicon" rel="icon" type="image/svg+xml" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -50,6 +50,10 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <button id="btnInstallPWA" type="button" title="Instalar aplicación" class="hidden items-center gap-1.5 px-2.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 active:scale-95 transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Instalar</span>
+        </button>
         <input type="month" id="periodSelector" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
         <button id="btnHeaderConfig" title="Configurar Firebase" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white active:scale-95 transition">
           <i data-lucide="settings" class="w-5 h-5"></i>
@@ -833,15 +837,168 @@
       await connectAndSync();
     });
 
+    function createAppIconDataUrl(size) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+
+      const radius = Math.round(size * 0.22);
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.lineWidth = Math.max(2, Math.round(size * 0.03));
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+      ctx.stroke();
+
+      ctx.fillStyle = "#34d399";
+      ctx.font = `bold ${Math.round(size * 0.56)}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("$", size / 2, size / 2 + Math.round(size * 0.03));
+
+      return canvas.toDataURL("image/png");
+    }
+
     function setupInlinePWA() {
-      // El manifest ahora es el archivo manifest.json (ver <head>).
+      try {
+        const icon192 = createAppIconDataUrl(192);
+        const icon512 = createAppIconDataUrl(512);
+        const appleIcon = createAppIconDataUrl(180);
+
+        const svgFavicon = encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <rect width="64" height="64" rx="14" fill="#0f172a"/>
+            <rect x="2" y="2" width="60" height="60" rx="12" fill="none" stroke="#10b981" stroke-opacity="0.5" stroke-width="2"/>
+            <text x="32" y="43" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="bold" font-size="36" fill="#34d399">$</text>
+          </svg>`
+        );
+
+        document.getElementById("dynamicFavicon").href = `data:image/svg+xml,${svgFavicon}`;
+        document.getElementById("dynamicAppleIcon").href = appleIcon;
+
+        const baseUrl = window.location.href.split("#")[0].split("?")[0];
+        const scopeUrl = baseUrl.substring(0, baseUrl.lastIndexOf("/") + 1);
+
+        const manifestObj = {
+          name: "ParejaFinance | Control Ejecutivo & Proyectos",
+          short_name: "ParejaFinance",
+          description: "Control ejecutivo de presupuesto, gastos, ingresos y proyectos en pareja.",
+          start_url: baseUrl,
+          scope: scopeUrl,
+          display: "standalone",
+          orientation: "portrait",
+          background_color: "#090e1a",
+          theme_color: "#0f172a",
+          icons: [
+            { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: "application/manifest+json" });
+        document.getElementById("dynamicManifest").href = URL.createObjectURL(manifestBlob);
+
+        let deferredPrompt = null;
+        const installBtn = document.getElementById("btnInstallPWA");
+
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          installBtn.classList.remove("hidden");
+          installBtn.classList.add("flex");
+        });
+
+        installBtn.addEventListener("click", async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === "accepted") {
+            installBtn.classList.add("hidden");
+            installBtn.classList.remove("flex");
+            showToast("Instalando ParejaFinance...");
+          }
+          deferredPrompt = null;
+        });
+
+        window.addEventListener("appinstalled", () => {
+          deferredPrompt = null;
+          installBtn.classList.add("hidden");
+          installBtn.classList.remove("flex");
+          showToast("¡ParejaFinance instalada correctamente!");
+        });
+      } catch (err) {
+        console.warn("Error generando manifest/íconos inline:", err);
+      }
     }
 
     function setupInlineServiceWorker() {
       if (!("serviceWorker" in navigator)) return;
-      navigator.serviceWorker.register("./sw.js").catch((err) => {
+
+      const appUrl = window.location.href.split("#")[0].split("?")[0];
+      const swCode = `
+        const CACHE_NAME = "pareja-finance-v1";
+        const CORE_ASSETS = [
+          ${JSON.stringify(appUrl)},
+          "https://cdn.tailwindcss.com",
+          "https://cdn.jsdelivr.net/npm/chart.js",
+          "https://unpkg.com/lucide@latest"
+        ];
+
+        self.addEventListener("install", (event) => {
+          self.skipWaiting();
+          event.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS).catch(() => {}))
+          );
+        });
+
+        self.addEventListener("activate", (event) => {
+          event.waitUntil(
+            caches.keys().then((keys) =>
+              Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+            ).then(() => self.clients.claim())
+          );
+        });
+
+        self.addEventListener("fetch", (event) => {
+          if (event.request.method !== "GET") return;
+          const url = new URL(event.request.url);
+          if (url.hostname.includes("firebaseio.com") || url.hostname.includes("googleapis.com")) return;
+
+          event.respondWith(
+            fetch(event.request)
+              .then((res) => {
+                if (res && (res.status === 200 || res.type === "opaque")) {
+                  const clone = res.clone();
+                  caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                }
+                return res;
+              })
+              .catch(() => caches.match(event.request))
+          );
+        });
+      `;
+
+      try {
+        const swBlob = new Blob([swCode], { type: "application/javascript" });
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl).catch(() => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      } catch (err) {
         console.warn("Service Worker omitido:", err);
-      });
+      }
     }
 
     async function connectAndSync() {
