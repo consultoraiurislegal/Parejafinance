@@ -163,7 +163,7 @@
           <i data-lucide="arrow-down-circle" class="w-5 h-5"></i> Nuevo Gasto (Descuenta de Reserva)
         </h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Fecha</label>
             <input type="date" id="gastoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none" />
@@ -172,6 +172,12 @@
             <label class="block text-xs text-slate-400 mb-1">Categoría de Presupuesto</label>
             <select id="gastoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none">
               <option value="">Selecciona categoría...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Proyecto Meta (Opcional)</label>
+            <select id="gastoProyecto" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none">
+              <option value="">Sin proyecto imputado</option>
             </select>
           </div>
         </div>
@@ -193,7 +199,7 @@
 
         <div>
           <label class="block text-xs text-slate-400 mb-1">Descripción / Detalle</label>
-          <input type="text" id="gastoDesc" placeholder="Ej. Compra semanal supermercado, pañales Roma..." required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none" />
+          <input type="text" id="gastoDesc" placeholder="Ej. Compra semanal supermercado, pañales Roma, material proyecto..." required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:border-rose-500 focus:outline-none" />
         </div>
 
         <button type="submit" class="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-bold text-sm shadow-lg shadow-rose-950/50 transition">
@@ -359,6 +365,27 @@
         </div>
       </div>
 
+      <!-- DEVOLVER DINERO DEL PROYECTO AL PRESUPUESTO (RECAPITALIZAR) -->
+      <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Retorno al Presupuesto</span>
+            <h3 class="text-sm font-bold text-white mt-0.5">Devolver Fondos de Proyecto al Presupuesto (Capitalizar)</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Retorna saldo acumulado de un proyecto meta hacia el sobrante/presupuesto disponible del período.</p>
+          </div>
+          <i data-lucide="rotate-ccw" class="w-5 h-5 text-amber-400 shrink-0"></i>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select id="selectProyectoDevolver" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+            <option value="">Selecciona Proyecto Origen...</option>
+          </select>
+          <input type="number" step="0.01" min="0.01" id="montoDevolverPresupuesto" placeholder="Monto a devolver ($)" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-amber-300" />
+          <button type="button" id="btnDevolverAlPresupuesto" class="py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm active:scale-95 transition">
+            Capitalizar al Presupuesto
+          </button>
+        </div>
+      </div>
+
       <!-- TRANSFERENCIA ENTRE PROYECTOS -->
       <div class="bg-slate-900 border border-sky-500/30 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between gap-2">
@@ -381,6 +408,66 @@
           </button>
         </div>
       </div>
+
+      <!-- REGISTRAR GASTO IMPUTABLE A PROYECTO META -->
+      <form id="formGastoProyecto" class="bg-slate-900 border border-rose-500/30 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-400">Imputación Directa a Meta</span>
+            <h3 class="text-sm font-bold text-white mt-0.5">Registrar Gasto Imputable a Proyecto</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Descuenta de la categoría presupuestaria seleccionada y queda imputado al proyecto meta.</p>
+          </div>
+          <i data-lucide="folder-kanban" class="w-5 h-5 text-rose-400 shrink-0"></i>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Proyecto Meta *</label>
+            <select id="proyGastoProyecto" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+              <option value="">Selecciona proyecto...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Categoría Presupuesto *</label>
+            <select id="proyGastoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+              <option value="">Selecciona categoría...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Fecha *</label>
+            <input type="date" id="proyGastoFecha" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Monto (USD Base) *</label>
+            <input type="number" step="0.01" min="0.01" id="proyGastoMonto" placeholder="0.00" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">¿Quién ejecutó el gasto? *</label>
+            <select id="proyGastoUsuario" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white">
+              <option value="Charles">Charles</option>
+              <option value="Mariana">Mariana</option>
+              <option value="Compartido">Compartido</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Descripción del Gasto Imputable *</label>
+          <input type="text" id="proyGastoDesc" placeholder="Ej. Compra de melamina, repuestos, adelanto de obra..." required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white" />
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm transition">
+          Registrar Gasto Imputado al Proyecto
+        </button>
+
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Gastos Imputados a Proyectos (Período Actual)</h4>
+          <div id="gastosImputadosProyectoList" class="divide-y divide-slate-800 text-xs"></div>
+        </div>
+      </form>
 
       <form id="formProyecto" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <h3 class="text-sm font-bold text-slate-200">Nuevo Proyecto o Fondo Meta</h3>
@@ -443,6 +530,7 @@
       <input type="hidden" id="editGastoId" />
       <input type="hidden" id="editGastoOldCatId" />
       <input type="hidden" id="editGastoOldMonto" />
+      <input type="hidden" id="editGastoOldProyId" />
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-rose-400 flex items-center gap-2">
           <i data-lucide="pencil" class="w-4 h-4"></i> Editar Gasto
@@ -460,6 +548,12 @@
           <label class="block text-xs text-slate-400 mb-1">Categoría</label>
           <select id="editGastoCategoria" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></select>
         </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Proyecto Meta Imputado (Opcional)</label>
+        <select id="editGastoProyecto" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          <option value="">Sin proyecto imputado</option>
+        </select>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -729,6 +823,7 @@
       const today = new Date().toISOString().slice(0, 10);
       document.getElementById("periodSelector").value = currentPeriod;
       document.getElementById("gastoFecha").value = today;
+      document.getElementById("proyGastoFecha").value = today;
       document.getElementById("ingresoFecha").value = today;
       syncCatFechaFijoVisibility();
 
@@ -811,6 +906,7 @@
       unsubscribeProyectos = onValue(projRef, (snapshot) => {
         state.proyectos = snapshot.val() || {};
         renderProyectos();
+        renderSelectOptions();
         if (window.lucide) lucide.createIcons();
       }, (error) => {
         console.error("Error leyendo proyectos:", error);
@@ -1073,14 +1169,20 @@
         return;
       }
 
-      container.innerHTML = list.map(g => `
+      container.innerHTML = list.map(g => {
+        const proyName = g.proyectoNombre || (g.proyectoId && state.proyectos[g.proyectoId]?.nombre) || "";
+        const proyBadge = proyName
+          ? `<span>•</span><span class="px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 text-sky-400">Proyecto: ${proyName}</span>`
+          : "";
+        return `
         <div class="py-3 flex items-center justify-between gap-3">
           <div class="min-w-0">
             <p class="text-sm font-medium text-slate-100 truncate">${g.desc}</p>
-            <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-0.5">
               <span>${g.fecha}</span>
               <span>•</span>
               <span class="text-emerald-400">${g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "General"}</span>
+              ${proyBadge}
               <span>•</span>
               <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${g.usuario}</span>
             </div>
@@ -1090,12 +1192,13 @@
             <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
               <i data-lucide="pencil" class="w-4 h-4"></i>
             </button>
-            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto}, '${g.proyectoId || ""}')" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function renderSelectOptions() {
@@ -1103,8 +1206,16 @@
       const optionsHtml = entries.map(([id, c]) => `<option value="${id}">${c.nombre}</option>`).join("");
 
       document.getElementById("gastoCategoria").innerHTML = `<option value="">Selecciona categoría...</option>${optionsHtml}`;
+      document.getElementById("proyGastoCategoria").innerHTML = `<option value="">Selecciona categoría...</option>${optionsHtml}`;
       document.getElementById("filterCategoria").innerHTML = `<option value="">Categoría: Todas</option>${optionsHtml}`;
       document.getElementById("editGastoCategoria").innerHTML = `<option value="">Selecciona categoría...</option>${optionsHtml}`;
+
+      const proyEntries = Object.entries(state.proyectos);
+      const proyOptionsHtml = proyEntries.map(([id, p]) => `<option value="${id}">${p.nombre} (Acum: ${formatUSD(p.acumulado || 0)})</option>`).join("");
+
+      document.getElementById("gastoProyecto").innerHTML = `<option value="">Sin proyecto imputado</option>${proyOptionsHtml}`;
+      document.getElementById("proyGastoProyecto").innerHTML = `<option value="">Selecciona proyecto...</option>${proyOptionsHtml}`;
+      document.getElementById("editGastoProyecto").innerHTML = `<option value="">Sin proyecto imputado</option>${proyOptionsHtml}`;
     }
 
     function renderCategoriasConfig() {
@@ -1153,23 +1264,27 @@
         return;
       }
 
-      container.innerHTML = entries.map(g => `
+      container.innerHTML = entries.map(g => {
+        const proyName = g.proyectoNombre || (g.proyectoId && state.proyectos[g.proyectoId]?.nombre) || "";
+        const proyTag = proyName ? ` • <span class="text-sky-400">Proy: ${proyName}</span>` : "";
+        return `
         <div class="py-2.5 flex items-center justify-between gap-2">
           <div class="min-w-0">
             <p class="font-medium text-slate-200 truncate">${g.desc}</p>
-            <p class="text-[11px] text-slate-400">${g.fecha} • <span class="text-emerald-400">${g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "General"}</span> • ${g.usuario}</p>
+            <p class="text-[11px] text-slate-400">${g.fecha} • <span class="text-emerald-400">${g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "General"}</span>${proyTag} • ${g.usuario}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <span class="font-bold text-rose-400">-${formatUSD(g.monto)}</span>
             <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
               <i data-lucide="pencil" class="w-4 h-4"></i>
             </button>
-            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+            <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto}, '${g.proyectoId || ""}')" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function renderIngresosList() {
@@ -1225,23 +1340,27 @@
       if (items.length === 0) {
         listEl.innerHTML = `<p class="py-6 text-center text-xs text-slate-500">No hay gastos registrados en esta categoría durante ${currentPeriod}.</p>`;
       } else {
-        listEl.innerHTML = items.map(g => `
+        listEl.innerHTML = items.map(g => {
+          const proyName = g.proyectoNombre || (g.proyectoId && state.proyectos[g.proyectoId]?.nombre) || "";
+          const proyTag = proyName ? ` • <span class="text-sky-400">Proy: ${proyName}</span>` : "";
+          return `
           <div class="py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
               <p class="text-sm font-medium text-slate-100 truncate">${g.desc}</p>
-              <p class="text-[11px] text-slate-400">${g.fecha} • <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${g.usuario}</span></p>
+              <p class="text-[11px] text-slate-400">${g.fecha}${proyTag} • <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${g.usuario}</span></p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <span class="text-sm font-bold text-rose-400">-${formatUSD(g.monto)}</span>
               <button onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
                 <i data-lucide="pencil" class="w-4 h-4"></i>
               </button>
-              <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto})" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+              <button onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto}, '${g.proyectoId || ""}')" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
-        `).join("");
+        `;
+        }).join("");
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -1293,10 +1412,24 @@
       document.getElementById("sobranteTotalDisplay").textContent = formatUSD(sobranteDisponible);
       document.getElementById("montoTransferirProyecto").max = sobranteDisponible;
 
+      // Calcular gastos imputados por proyecto en el período actual
+      const imputadoPorProyectoMes = {};
+      Object.values(state.gastos).forEach(g => {
+        if (g.proyectoId) {
+          imputadoPorProyectoMes[g.proyectoId] = (imputadoPorProyectoMes[g.proyectoId] || 0) + Number(g.monto || 0);
+        }
+      });
+
       const entries = Object.entries(state.proyectos);
       const select = document.getElementById("selectProyectoDestino");
       select.innerHTML = `<option value="">Selecciona Proyecto Destino...</option>` +
         entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Falta ${formatUSD(Math.max(0, p.objetivo - (p.acumulado || 0)))})</option>`).join("");
+
+      const selectDevolver = document.getElementById("selectProyectoDevolver");
+      if (selectDevolver) {
+        selectDevolver.innerHTML = `<option value="">Selecciona Proyecto Origen...</option>` +
+          entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Acum: ${formatUSD(p.acumulado || 0)})</option>`).join("");
+      }
 
       const selectOrigen = document.getElementById("selectProyectoOrigen");
       const selectDestinoTransfer = document.getElementById("selectProyectoDestinoTransfer");
@@ -1305,6 +1438,47 @@
           entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Disp: ${formatUSD(p.acumulado || 0)})</option>`).join("");
         selectDestinoTransfer.innerHTML = `<option value="">Proyecto Destino...</option>` +
           entries.map(([id, p]) => `<option value="${id}">${p.nombre} (Acum: ${formatUSD(p.acumulado || 0)})</option>`).join("");
+      }
+
+      const proyGastoSelect = document.getElementById("proyGastoProyecto");
+      if (proyGastoSelect) {
+        proyGastoSelect.innerHTML = `<option value="">Selecciona proyecto...</option>` +
+          entries.map(([id, p]) => `<option value="${id}">${p.nombre}</option>`).join("");
+      }
+
+      // Renderizar lista de gastos imputados a proyectos del período
+      const gastosImputados = Object.entries(state.gastos)
+        .map(([id, g]) => ({ id, ...g }))
+        .filter(g => Boolean(g.proyectoId))
+        .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+      const impListEl = document.getElementById("gastosImputadosProyectoList");
+      if (impListEl) {
+        if (gastosImputados.length === 0) {
+          impListEl.innerHTML = `<p class="py-3 text-center text-slate-500">No hay gastos imputados a proyectos en ${currentPeriod}.</p>`;
+        } else {
+          impListEl.innerHTML = gastosImputados.map(g => {
+            const pName = g.proyectoNombre || state.proyectos[g.proyectoId]?.nombre || "Proyecto";
+            const cName = g.categoriaNombre || state.categorias[g.categoriaId]?.nombre || "Categoría";
+            return `
+              <div class="py-2 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="font-medium text-slate-200 truncate">${g.desc}</p>
+                  <p class="text-[11px] text-slate-400">${g.fecha} • <span class="text-sky-400 font-semibold">${pName}</span> • <span class="text-emerald-400">${cName}</span> • ${g.usuario}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="font-bold text-rose-400">-${formatUSD(g.monto)}</span>
+                  <button type="button" onclick="openEditGastoModal('${g.id}')" title="Editar gasto" class="text-slate-400 hover:text-sky-400 p-1">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                  <button type="button" onclick="deleteGasto('${g.id}', '${g.categoriaId}', ${g.monto}, '${g.proyectoId || ""}')" title="Eliminar gasto" class="text-slate-500 hover:text-rose-400 p-1">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
       }
 
       const grid = document.getElementById("proyectosGrid");
@@ -1318,6 +1492,8 @@
       grid.innerHTML = entries.map(([id, p]) => {
         const obj = Number(p.objetivo || 0);
         const acum = Number(p.acumulado || 0);
+        const impMes = imputadoPorProyectoMes[id] || 0;
+        const impTotal = Number(p.gastado || 0);
         const pct = obj > 0 ? Math.min(100, (acum / obj) * 100) : 0;
 
         return `
@@ -1326,6 +1502,7 @@
               <div>
                 <h4 class="font-bold text-sm text-white">${p.nombre}</h4>
                 <p class="text-xs text-slate-400 mt-0.5">Meta: ${formatUSD(obj)}</p>
+                <p class="text-[11px] text-rose-400 mt-0.5">Imputado mes: ${formatUSD(impMes)} ${impTotal > 0 ? `• Total imp.: ${formatUSD(impTotal)}` : ""}</p>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button type="button" onclick="openEditProyectoModal('${id}')" title="Editar proyecto" class="p-1.5 rounded-lg bg-slate-800 text-sky-400 hover:bg-slate-700 transition">
@@ -1360,6 +1537,13 @@
       if (isFijo && !inputFecha.value) {
         inputFecha.value = `${currentPeriod}-01`;
       }
+    }
+
+    async function adjustProyectoImputado(proyId, delta) {
+      if (!proyId || !state.proyectos[proyId] || !delta) return;
+      const currentGastado = Number(state.proyectos[proyId].gastado || 0);
+      const nextGastado = Math.max(0, Number((currentGastado + Number(delta)).toFixed(2)));
+      await update(ref(db, `presupuesto_pareja/proyectos_globales/${proyId}`), { gastado: nextGastado });
     }
 
     function bindEvents() {
@@ -1406,16 +1590,22 @@
         const gastoId = document.getElementById("editGastoId").value;
         const oldCatId = document.getElementById("editGastoOldCatId").value;
         const oldMonto = Number(document.getElementById("editGastoOldMonto").value || 0);
+        const oldProyId = document.getElementById("editGastoOldProyId").value;
 
         const newCatId = document.getElementById("editGastoCategoria").value;
         const catObj = state.categorias[newCatId];
         if (!catObj) return showToast("Selecciona una categoría válida", true);
+
+        const newProyId = document.getElementById("editGastoProyecto").value || null;
+        const proyObj = newProyId ? state.proyectos[newProyId] : null;
 
         const newMonto = Number(document.getElementById("editGastoMonto").value);
         const updatedGasto = {
           fecha: document.getElementById("editGastoFecha").value,
           categoriaId: newCatId,
           categoriaNombre: catObj.nombre,
+          proyectoId: newProyId,
+          proyectoNombre: proyObj ? proyObj.nombre : null,
           monto: newMonto,
           usuario: document.getElementById("editGastoUsuario").value,
           desc: document.getElementById("editGastoDesc").value.trim()
@@ -1436,8 +1626,21 @@
           await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${newCatId}`), { gastado: nextCatGastado });
         }
 
+        if (oldProyId === newProyId) {
+          if (newProyId) {
+            await adjustProyectoImputado(newProyId, newMonto - oldMonto);
+          }
+        } else {
+          if (oldProyId) {
+            await adjustProyectoImputado(oldProyId, -oldMonto);
+          }
+          if (newProyId) {
+            await adjustProyectoImputado(newProyId, newMonto);
+          }
+        }
+
         closeEditGasto();
-        showToast("Gasto actualizado y reservas recalculadas");
+        showToast("Gasto actualizado y reservas/proyectos recalculados");
       });
 
       document.getElementById("formEditIngreso").addEventListener("submit", async (e) => {
@@ -1575,11 +1778,16 @@
         const catObj = state.categorias[catId];
         if (!catObj) return showToast("Selecciona una categoría válida", true);
 
+        const proyId = document.getElementById("gastoProyecto").value || null;
+        const proyObj = proyId ? state.proyectos[proyId] : null;
+
         const monto = Number(document.getElementById("gastoMonto").value);
         const gastoData = {
           fecha: document.getElementById("gastoFecha").value,
           categoriaId: catId,
           categoriaNombre: catObj.nombre,
+          proyectoId: proyId,
+          proyectoNombre: proyObj ? proyObj.nombre : null,
           monto,
           usuario: document.getElementById("gastoUsuario").value,
           desc: document.getElementById("gastoDesc").value.trim()
@@ -1589,9 +1797,50 @@
         const nuevoGastado = Number(catObj.gastado || 0) + monto;
         await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${catId}`), { gastado: nuevoGastado });
 
+        if (proyId) {
+          await adjustProyectoImputado(proyId, monto);
+        }
+
         document.getElementById("gastoMonto").value = "";
         document.getElementById("gastoDesc").value = "";
-        showToast("Gasto registrado y descontado de la reserva");
+        document.getElementById("gastoProyecto").value = "";
+        showToast(proyObj ? `Gasto registrado e imputado a ${proyObj.nombre}` : "Gasto registrado y descontado de la reserva");
+      });
+
+      document.getElementById("formGastoProyecto").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!ensureDb()) return;
+
+        const proyId = document.getElementById("proyGastoProyecto").value;
+        const proyObj = state.proyectos[proyId];
+        if (!proyObj) return showToast("Selecciona un proyecto meta válido", true);
+
+        const catId = document.getElementById("proyGastoCategoria").value;
+        const catObj = state.categorias[catId];
+        if (!catObj) return showToast("Selecciona una categoría de presupuesto válida", true);
+
+        const monto = Number(document.getElementById("proyGastoMonto").value);
+        if (!monto || monto <= 0) return showToast("Ingresa un monto válido", true);
+
+        const gastoData = {
+          fecha: document.getElementById("proyGastoFecha").value,
+          categoriaId: catId,
+          categoriaNombre: catObj.nombre,
+          proyectoId: proyId,
+          proyectoNombre: proyObj.nombre,
+          monto,
+          usuario: document.getElementById("proyGastoUsuario").value,
+          desc: document.getElementById("proyGastoDesc").value.trim()
+        };
+
+        await push(ref(db, `presupuesto_pareja/${currentPeriod}/gastos`), gastoData);
+        const nuevoGastado = Number(catObj.gastado || 0) + monto;
+        await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${catId}`), { gastado: nuevoGastado });
+        await adjustProyectoImputado(proyId, monto);
+
+        document.getElementById("proyGastoMonto").value = "";
+        document.getElementById("proyGastoDesc").value = "";
+        showToast(`Gasto de ${formatUSD(monto)} imputado a ${proyObj.nombre}`);
       });
 
       document.getElementById("formIngreso").addEventListener("submit", async (e) => {
@@ -1619,7 +1868,8 @@
         await push(ref(db, `presupuesto_pareja/proyectos_globales`), {
           nombre: document.getElementById("proyNombre").value.trim(),
           objetivo: Number(document.getElementById("proyObjetivo").value),
-          acumulado: 0
+          acumulado: 0,
+          gastado: 0
         });
         document.getElementById("proyNombre").value = "";
         document.getElementById("proyObjetivo").value = "";
@@ -1649,6 +1899,38 @@
 
         document.getElementById("montoTransferirProyecto").value = "";
         showToast(`¡${formatUSD(monto)} asignados a ${proy.nombre}!`);
+      });
+
+      document.getElementById("btnDevolverAlPresupuesto").addEventListener("click", async () => {
+        if (!ensureDb()) return;
+        const proyId = document.getElementById("selectProyectoDevolver").value;
+        const monto = Number(document.getElementById("montoDevolverPresupuesto").value);
+
+        if (!proyId) return showToast("Selecciona un proyecto origen", true);
+        if (!monto || monto <= 0) return showToast("Ingresa un monto válido a devolver", true);
+
+        const proy = state.proyectos[proyId];
+        if (!proy) return showToast("Proyecto no encontrado", true);
+
+        const saldoActual = Number(proy.acumulado || 0);
+        if (monto > saldoActual + 0.001) {
+          return showToast(`Saldo insuficiente en ${proy.nombre} (${formatUSD(saldoActual)})`, true);
+        }
+
+        const nuevoAcumulado = Math.max(0, Number((saldoActual - monto).toFixed(2)));
+        await update(ref(db, `presupuesto_pareja/proyectos_globales/${proyId}`), { acumulado: nuevoAcumulado });
+
+        // Registrar devolución negativa en asignaciones del período para recapitalizar el sobrante disponible del mes
+        await push(ref(db, `presupuesto_pareja/${currentPeriod}/asignaciones`), {
+          fecha: new Date().toISOString().slice(0, 10),
+          proyectoId: proyId,
+          proyectoNombre: proy.nombre,
+          monto: -monto,
+          tipo: "devolucion_presupuesto"
+        });
+
+        document.getElementById("montoDevolverPresupuesto").value = "";
+        showToast(`Capitalizados ${formatUSD(monto)} de ${proy.nombre} de vuelta al presupuesto`);
       });
 
       document.getElementById("btnTransferirEntreProyectos").addEventListener("click", async () => {
@@ -1742,8 +2024,10 @@
       document.getElementById("editGastoId").value = id;
       document.getElementById("editGastoOldCatId").value = g.categoriaId || "";
       document.getElementById("editGastoOldMonto").value = g.monto || 0;
+      document.getElementById("editGastoOldProyId").value = g.proyectoId || "";
       document.getElementById("editGastoFecha").value = g.fecha || "";
       document.getElementById("editGastoCategoria").value = g.categoriaId || "";
+      document.getElementById("editGastoProyecto").value = g.proyectoId || "";
       document.getElementById("editGastoMonto").value = g.monto || "";
       document.getElementById("editGastoUsuario").value = g.usuario || "Compartido";
       document.getElementById("editGastoDesc").value = g.desc || "";
@@ -1796,12 +2080,19 @@
       showToast("Categoría eliminada");
     };
 
-    window.deleteGasto = async (id, catId, monto) => {
+    window.deleteGasto = async (id, catId, monto, proyId = "") => {
       if (!ensureDb() || !confirm("¿Eliminar este gasto y restaurar la reserva?")) return;
+      const gastoRecord = state.gastos[id];
+      const resolvedProyId = proyId || (gastoRecord && gastoRecord.proyectoId) || "";
+      const resolvedMonto = Number(monto || (gastoRecord && gastoRecord.monto) || 0);
+
       await remove(ref(db, `presupuesto_pareja/${currentPeriod}/gastos/${id}`));
       if (state.categorias[catId]) {
-        const nuevo = Math.max(0, Number(state.categorias[catId].gastado || 0) - Number(monto));
+        const nuevo = Math.max(0, Number(state.categorias[catId].gastado || 0) - resolvedMonto);
         await update(ref(db, `presupuesto_pareja/${currentPeriod}/categorias/${catId}`), { gastado: nuevo });
+      }
+      if (resolvedProyId) {
+        await adjustProyectoImputado(resolvedProyId, -resolvedMonto);
       }
       showToast("Gasto eliminado y saldo restaurado");
     };
